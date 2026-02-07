@@ -1,36 +1,37 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Architecture - Adapt
 
-## Getting Started
+AdaptIQ is an AI-powered PowerPoint add-in that helps presenters adapt their slides in real time based on audience engagement and presenter cues. During a presentation, AdaptIQ monitors live signals—such as pauses, questions, and speech patterns—to infer whether the audience is engaged, confused, or losing focus. It then provides clear, actionable suggestions directly inside PowerPoint, like adding an example slide, simplifying content, or skipping ahead, and allows presenters to apply these changes instantly with one click. The goal is to make presentations more responsive, clear, and effective without disrupting the presenter’s flow.
 
-First, run the development server:
+Powerpoint Add-In(nextjs)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Audio signals
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Real-Time siggustions
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+One-click slide Action
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Whole Tech:
+-Next.js
+-Office.js
+-webaudio API
+-OpenAI
 
-## Learn More
+Flow: (Speech-to-text)
 
-To learn more about Next.js, take a look at the following resources:
+1. web audio Api -> audio.ts
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+2. audio chunk sent to backend
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+3. Whisper(open AI) -> transcript (inside analyze/route.s)
 
-## Deploy on Vercel
+4. Transcript + slidetext -> gpt
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+5. gpt returns engagement + suggestion
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+lib/ai.ts -> prompt logic
+
+SideBar : start listening
+
+AdaptIq is a Powerpoint Add-in. users install it once and then it appears inside powerpoint as a sidebar they can open during any presentation
+
+TTS: Read suggesstion out loud
