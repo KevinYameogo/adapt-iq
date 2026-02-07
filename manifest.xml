@@ -9,7 +9,7 @@
   <Version>1.0.0.0</Version>
   <ProviderName>St Johns Hacks</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="AI Slide Assistant"/>
+  <DisplayName DefaultValue="AdaptIQ"/>
   <Description DefaultValue="Generate and insert slide content from prompts."/>
   <IconUrl DefaultValue="https://localhost:3000/favicon.ico"/>
   <HighResolutionIconUrl DefaultValue="https://localhost:3000/favicon.ico"/>
@@ -85,9 +85,9 @@
       </bt:Urls>
 
       <bt:ShortStrings>
-        <bt:String id="GetStarted.Title" DefaultValue="AI Slide Assistant"/>
-        <bt:String id="CommandsGroup.Label" DefaultValue="AI Slide Assistant"/>
-        <bt:String id="ShowTaskpaneButton.Label" DefaultValue="Open AI Pane"/>
+        <bt:String id="GetStarted.Title" DefaultValue="AdaptIQ"/>
+        <bt:String id="CommandsGroup.Label" DefaultValue="AdaptIQ"/>
+        <bt:String id="ShowTaskpaneButton.Label" DefaultValue="Open AdaptIQ"/>
       </bt:ShortStrings>
 
       <bt:LongStrings>

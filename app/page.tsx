@@ -1,4 +1,7 @@
+"use client"; // Add this if you get a "useState" error
+
 import Navbar from "../components/Navbar";
+import BackToTop from "../components/BackToTop";
 
 export default function Home() {
   return (
@@ -17,7 +20,6 @@ export default function Home() {
               The Future of Presentation Intelligence
             </p>
           </div>
-          {/* Placeholder for your actual project video */}
           <div className="absolute inset-0 flex items-center justify-center opacity-10">
             <span className="text-6xl text-white font-black italic underline">
               VIDEO
@@ -36,9 +38,6 @@ export default function Home() {
               Scale your productivity without sacrificing quality. Adapt AI
               keeps slide creation fast, reliable, and human.
             </p>
-            <button className="w-full py-5 bg-green-500 text-white rounded-2xl font-bold shadow-2xl shadow-green-100 hover:scale-[1.02] transition-transform">
-              Start for free →
-            </button>
           </section>
 
           {/* SECTION 3: ICON NAVIGATION */}
@@ -48,10 +47,10 @@ export default function Home() {
             <NavIcon icon="🎨" label="Design" sub="Smart Styles" />
           </section>
 
-          {/* SECTION 4: DEEP DIVE (SERVICE & PICTURES) */}
-          <section className="space-y-20">
+          {/* SECTION 4: DEEP DIVE (THE COMPLETE PLATFORM) */}
+          <section className="space-y-12 py-10">
             <div className="text-center">
-              <h2 className="text-xl font-black uppercase italic text-slate-800">
+              <h2 className="text-2xl font-black uppercase italic text-slate-800 tracking-tighter">
                 A complete platform
               </h2>
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
@@ -59,41 +58,66 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Service 1: Note-to-Slide */}
-            <div className="space-y-6">
-              <div className="w-full aspect-video bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center group relative overflow-hidden">
-                <span className="text-4xl mb-2">📸</span>
-                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest text-center px-4">
-                  Interface Screenshot Placeholder
-                </span>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-2">
+              {/* Service 1: Note-to-Slide */}
+              <div className="space-y-4">
+                <div className="w-full aspect-square bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center group relative overflow-hidden transition-all hover:border-indigo-300">
+                  <span className="text-4xl mb-2 group-hover:scale-110 transition-transform">
+                    📝
+                  </span>
+                  <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest text-center px-4">
+                    Interface WWWWWW
+                  </span>
+                </div>
+                <div className="text-center md:text-left">
+                  <h4 className="text-lg font-bold text-slate-800 mb-1">
+                    Note-to-Slide
+                  </h4>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    Turn rough ideas into polished structured slides instantly.
+                  </p>
+                </div>
               </div>
-              <div className="px-2">
-                <h4 className="text-xl font-bold text-slate-900 mb-2">
-                  Note-to-Slide Generation
-                </h4>
-                <p className="text-sm text-slate-500 leading-relaxed">
-                  Turn your rough ideas into polished structured slides. Simply
-                  paste your notes and watch the AI build the narrative.
-                </p>
-              </div>
-            </div>
 
-            {/* Service 2: Smart Summaries */}
-            <div className="space-y-6">
-              <div className="w-full aspect-video bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center group relative overflow-hidden">
-                <span className="text-4xl mb-2">📊</span>
-                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest text-center px-4">
-                  Visual Result Placeholder
-                </span>
+              {/* Service 2: Smart Summaries */}
+              <div className="space-y-4">
+                <div className="w-full aspect-square bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center group relative overflow-hidden transition-all hover:border-indigo-300">
+                  <span className="text-4xl mb-2 group-hover:scale-110 transition-transform">
+                    📊
+                  </span>
+                  <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest text-center px-4">
+                    Visual Result Placeholder
+                  </span>
+                </div>
+                <div className="text-center md:text-left">
+                  <h4 className="text-lg font-bold text-slate-800 mb-1">
+                    Smart Summaries
+                  </h4>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    Generate comparisons and pros/cons directly inside
+                    PowerPoint.
+                  </p>
+                </div>
               </div>
-              <div className="px-2">
-                <h4 className="text-xl font-bold text-slate-900 mb-2">
-                  Smart Summaries
-                </h4>
-                <p className="text-sm text-slate-500 leading-relaxed">
-                  Generate comparisons, pros/cons, and research-assisted content
-                  inside PowerPoint. Clean, structured, and fast.
-                </p>
+
+              {/* Service 3: Research AI */}
+              <div className="space-y-4">
+                <div className="w-full aspect-square bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center group relative overflow-hidden transition-all hover:border-indigo-300">
+                  <span className="text-4xl mb-2 group-hover:scale-110 transition-transform">
+                    🔍
+                  </span>
+                  <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest text-center px-4">
+                    Research Tool Placeholder
+                  </span>
+                </div>
+                <div className="text-center md:text-left">
+                  <h4 className="text-lg font-bold text-slate-800 mb-1">
+                    Research AI
+                  </h4>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    Real-time fact checking and data sourcing for every slide.
+                  </p>
+                </div>
               </div>
             </div>
           </section>
@@ -128,7 +152,8 @@ export default function Home() {
         </div>
       </main>
 
-      {/* FLOATING ACTION BUTTON */}
+      <BackToTop />
+
       <button className="fixed bottom-8 right-6 h-14 w-14 bg-indigo-600 rounded-2xl shadow-[0_20px_50px_rgba(79,70,229,0.3)] flex items-center justify-center text-white text-2xl hover:translate-y-[-4px] transition-transform z-50">
         💬
       </button>

@@ -35,3 +35,22 @@ SideBar : start listening
 AdaptIq is a Powerpoint Add-in. users install it once and then it appears inside powerpoint as a sidebar they can open during any presentation
 
 TTS: Read suggesstion out loud
+
+```bash
+npm run dev:https
+```
+
+use Powerpoint online
+
+2. Sideload in PowerPoint (Web)
+   The easiest way to test is using PowerPoint on the web.
+
+Go to PowerPoint Online and create a blank presentation.
+Go to the Insert tab > Add-ins.
+Click Upload My Add-in.
+Select the
+manifest.xml
+file from your project root (
+…/adapt-id/manifest.xml
+).
+Accept any prompts. The "AI Slide Assistant" (AdaptIQ) Taskpane button should appear on the Home tab ribbon.
