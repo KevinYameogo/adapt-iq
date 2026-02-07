@@ -1,33 +1,31 @@
 @import "tailwindcss";
 
-/* Define all your variables here in :root */
 :root {
+  /* Ultra-bright palette */
   --background: #ffffff;
-  --foreground: #171717;
-  --accent-indigo: #4f46e5;
-  --accent-green: #22c55e;
-
-  /* Map these to Tailwind-like variable names */
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: Arial, Helvetica, sans-serif;
+  --foreground: #0f172a; /* Deep slate for readability, not pure black */
+  --accent-indigo: #6366f1; /* Brighter indigo */
+  --accent-emerald: #10b981;
+  --soft-gray: #f8fafc; /* For light section backgrounds */
+  
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
+/* Remove dark mode override to keep it bright and professional */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #ffffff;
+    --foreground: #0f172a;
   }
 }
 
-/* 1. Global Smooth Scroll */
 html {
   scroll-behavior: smooth;
 }
 
-/* 2. Custom Scrollbar */
+/* 1. Ultra-Clean Scrollbar */
 ::-webkit-scrollbar {
-  width: 5px;
+  width: 4px;
 }
 
 ::-webkit-scrollbar-track {
@@ -35,15 +33,14 @@ html {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 10px;
+  background: #e2e8f0;
+  border-radius: 20px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--accent-indigo);
 }
 
-/* 3. Refined Body Styles */
 body {
   background: var(--background);
   color: var(--foreground);
@@ -51,37 +48,52 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* 4. Modern Glass Navigation */
+/* 2. Enhanced Glass Navigation */
 .glass-nav {
   position: sticky;
   top: 0;
   z-index: 50;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid
-    color-mix(in srgb, var(--foreground), transparent 90%);
-  background-color: color-mix(in srgb, var(--background), transparent 20%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background-color: rgba(255, 255, 255, 0.7);
+  border-bottom: 1px solid rgba(241, 245, 249, 0.8);
 }
 
-.text-glow {
-  text-shadow: 0 0 30px rgba(79, 70, 229, 0.3);
+/* 3. Subtle Elevation (Cards and Placeholders) */
+.soft-card {
+  background: #ffffff;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  border-radius: 24px;
+}
+
+/* 4. The "ToltIQ" Glow Effect */
+.iq-glow {
+  position: relative;
+}
+
+.iq-glow::after {
+  content: '';
+  position: absolute;
+  top: -20%;
+  left: -10%;
+  width: 140%;
+  height: 140%;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, transparent 70%);
+  z-index: -1;
+  pointer-events: none;
 }
 
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
 
-/* 5. Custom Animation */
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
+/* 5. Modern Animation */
+@keyframes soft-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
 }
 
 .animate-float {
-  animation: float 3s ease-in-out infinite;
+  animation: soft-float 4s ease-in-out infinite;
 }
