@@ -29,6 +29,7 @@
 
   <Permissions>ReadWriteDocument</Permissions>
 
+  <!-- getImageAsBase64 (used for summary QR flow) needs PowerPointApi 1.8; current Office typically supports it -->
   <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
     <Hosts>
       <Host xsi:type="Presentation">

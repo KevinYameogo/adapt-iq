@@ -48,9 +48,9 @@ use Powerpoint online
 Go to PowerPoint Online and create a blank presentation.
 Go to the Insert tab > Add-ins.
 Click Upload My Add-in.
-Select the
-manifest.xml
-file from your project root (
-…/adapt-id/manifest.xml
-).
-Accept any prompts. The "AI Slide Assistant" (AdaptIQ) Taskpane button should appear on the Home tab ribbon.
+Select the `manifest.xml` file from your project root (`…/adapt-iq/manifest.xml`).
+Accept any prompts. The **AdaptIQ** task pane button should appear on the Home tab ribbon.
+
+**Summary & QR:** Use the "SUMMARY & QR" tab to create a shareable page (slides + AI summaries) and a QR code. For the QR link to work for your audience, deploy the app and set `NEXT_PUBLIC_APP_URL` (e.g. `https://your-app.vercel.app`).
+
+**If the pane opens as a small bubble then disappears:** The add-in is failing to load. (1) Use `npm run dev:https` (not `npm run dev`) so the manifest URL matches. (2) In your browser, open https://localhost:3000 once and accept the certificate. (3) On Windows desktop PowerPoint, run in an elevated prompt: `CheckNetIsolation LoopbackExempt -a -n="microsoft.win32webviewhost_cw5n1h2txyewy"` so the host can reach localhost.

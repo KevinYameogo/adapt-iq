@@ -5,6 +5,8 @@ import { useEngagement } from "../../hooks/useEngagement";
 import StatusIndicator from "../../components/StatusIndicator";
 import Controls from "../../components/Controls";
 import SuggestionCard from "../../components/SuggestionCard";
+import { TaskpaneErrorBoundary } from "./TaskpaneErrorBoundary";
+import { getAllSlidesContent, insertSlideWithUrl } from "@/lib/office";
 
 declare global {
   interface Window {
@@ -13,9 +15,9 @@ declare global {
   }
 }
 
-export default function TaskpanePage() {
+function TaskpaneContent() {
   const [ready, setReady] = useState(false);
-  const [view, setView] = useState<"auto" | "manual">("auto");
+  const [view, setView] = useState<"auto" | "manual" | "summary">("auto");
   const isMounted = useRef(true);
   
   // Manual State (from User's edits)
@@ -35,6 +37,12 @@ export default function TaskpanePage() {
 
   const [isTTSEnabled, setIsTTSEnabled] = useState(true);
 
+  // Summary & QR state
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [summaryResult, setSummaryResult] = useState<{ url: string; qrDataUrl: string; slideCount: number } | null>(null);
+  const [addSlideStatus, setAddSlideStatus] = useState("");
+
   // TTS Hook
   useEffect(() => {
     if (isTTSEnabled && engagementData?.suggestion) {
@@ -44,25 +52,26 @@ export default function TaskpanePage() {
     }
   }, [engagementData, isTTSEnabled]);
 
-  // Office.js Ready Hook
+  // Office.js Ready Hook — never throw so the pane stays open and error boundary can show any real error
   useEffect(() => {
     isMounted.current = true;
-    
-    // Poll for Office.js availability
-    const interval = setInterval(() => {
-        if (typeof window !== 'undefined' && window.Office && window.Office.onReady) {
-            window.Office.onReady(() => {
-                if (isMounted.current) {
-                    setReady(true);
-                }
-            });
-            clearInterval(interval);
+    let interval: ReturnType<typeof setInterval> | null = setInterval(() => {
+      try {
+        if (typeof window !== "undefined" && window.Office?.onReady) {
+          window.Office.onReady(() => {
+            if (isMounted.current) setReady(true);
+          });
+          if (interval) clearInterval(interval);
+          interval = null;
         }
+      } catch (_) {
+        // ignore so we don't close the pane
+      }
     }, 200);
 
     return () => {
-        isMounted.current = false;
-        clearInterval(interval);
+      isMounted.current = false;
+      if (interval) clearInterval(interval);
     };
   }, []);
 
@@ -126,6 +135,46 @@ export default function TaskpanePage() {
     }
   }
 
+  async function handleCreateSummaryAndQr() {
+    setSummaryError(null);
+    setSummaryResult(null);
+    setSummaryLoading(true);
+    try {
+      const { slides } = await getAllSlidesContent();
+      if (!slides.length) {
+        setSummaryError("No slides in the presentation.");
+        return;
+      }
+      const res = await fetch("/api/summary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slides }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setSummaryError(data.error || "Failed to create summary");
+        return;
+      }
+      const data = await res.json();
+      setSummaryResult({ url: data.url, qrDataUrl: data.qrDataUrl, slideCount: data.slideCount });
+    } catch (e: any) {
+      setSummaryError(e?.message ?? "Something went wrong");
+    } finally {
+      setSummaryLoading(false);
+    }
+  }
+
+  async function handleAddSlideWithLink() {
+    if (!summaryResult?.url || !ready) return;
+    setAddSlideStatus("Adding slide...");
+    try {
+      await insertSlideWithUrl(summaryResult.url);
+      setAddSlideStatus("Slide added ✅");
+    } catch (e: any) {
+      setAddSlideStatus(`Error: ${e?.message ?? String(e)}`);
+    }
+  }
+
   if (!ready) {
       return (
           <div className="flex flex-col items-center justify-center h-screen bg-slate-50 p-4">
@@ -161,15 +210,21 @@ export default function TaskpanePage() {
         <div className="flex p-1 bg-slate-100 rounded-lg">
             <button 
                 onClick={() => setView("auto")}
-                className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${view === 'auto' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500'}`}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${view === "auto" ? "bg-white shadow-sm text-slate-800" : "text-slate-500"}`}
             >
-                AUTO-ADAPT
+                AUTO
             </button>
             <button 
                 onClick={() => setView("manual")}
-                className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${view === 'manual' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500'}`}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${view === "manual" ? "bg-white shadow-sm text-slate-800" : "text-slate-500"}`}
             >
                 MANUAL
+            </button>
+            <button 
+                onClick={() => setView("summary")}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${view === "summary" ? "bg-white shadow-sm text-slate-800" : "text-slate-500"}`}
+            >
+                SUMMARY & QR
             </button>
         </div>
       </header>
@@ -266,6 +321,45 @@ export default function TaskpanePage() {
             </div>
         )}
 
+        {view === "summary" && (
+            <div className="space-y-4">
+                <p className="text-xs text-slate-600">Create a shareable page with slide images and AI summaries. A QR code links to it.</p>
+                <button
+                    onClick={handleCreateSummaryAndQr}
+                    disabled={summaryLoading || !ready}
+                    className="w-full py-3 px-4 rounded-xl font-bold text-sm bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors"
+                >
+                    {summaryLoading ? "Creating summary…" : "Create summary and QR"}
+                </button>
+                {summaryError && (
+                    <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-100">
+                        {summaryError}
+                    </div>
+                )}
+                {summaryResult && (
+                    <div className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm space-y-4">
+                        <div className="flex justify-center">
+                            <img src={summaryResult.qrDataUrl} alt="QR code" className="w-40 h-40 rounded-lg border border-slate-200" />
+                        </div>
+                        <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Share link</p>
+                        <p className="text-xs text-slate-700 break-all font-mono bg-slate-50 p-2 rounded border border-slate-100">
+                            {summaryResult.url}
+                        </p>
+                        <p className="text-xs text-slate-500">{summaryResult.slideCount} slides summarized.</p>
+                        <button
+                            onClick={handleAddSlideWithLink}
+                            className="w-full py-2 bg-white border border-slate-200 text-slate-800 text-xs font-bold uppercase rounded-xl hover:bg-slate-50"
+                        >
+                            Add slide with link
+                        </button>
+                        {addSlideStatus && (
+                            <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">{addSlideStatus}</p>
+                        )}
+                    </div>
+                )}
+            </div>
+        )}
+
       </main>
 
       {/* Persistent Footer Controls for Auto Mode */}
@@ -275,5 +369,13 @@ export default function TaskpanePage() {
         </footer>
       )}
     </div>
+  );
+}
+
+export default function TaskpanePage() {
+  return (
+    <TaskpaneErrorBoundary>
+      <TaskpaneContent />
+    </TaskpaneErrorBoundary>
   );
 }
