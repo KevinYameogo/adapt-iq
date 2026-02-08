@@ -1,58 +1,192 @@
-# Architecture - Adapt
+# ADAPT AI
 
-AdaptIQ is an AI-powered PowerPoint add-in that helps presenters adapt their slides in real time based on audience engagement and presenter cues. During a presentation, AdaptIQ monitors live signals—such as pauses, questions, and speech patterns—to infer whether the audience is engaged, confused, or losing focus. It then provides clear, actionable suggestions directly inside PowerPoint, like adding an example slide, simplifying content, or skipping ahead, and allows presenters to apply these changes instantly with one click. The goal is to make presentations more responsive, clear, and effective without disrupting the presenter’s flow.
+**AI-Powered Presentation Intelligence for PowerPoint**
 
-Powerpoint Add-In(nextjs)
+ADAPT AI is a PowerPoint add-in that transforms how you create and refine presentations. Built with AI-first design, it provides instant insights, speaker coaching, and persistent knowledge management—all without leaving PowerPoint.
 
-Audio signals
+---
 
-Real-Time suggustions
+## 🎯 What is ADAPT AI?
 
-One-click slide Action
+ADAPT AI is an intelligent presentation copilot that analyzes your slides, generates professional speaker notes, suggests research topics, and maintains a persistent library of insights. Designed for Mac and Windows, it works around platform limitations to deliver a seamless, crash-free experience.
 
-Whole Tech:
--Next.js
--Office.js
--webaudio API
--OpenAI
+## ✨ Features
 
-Flow: (Speech-to-text)
+### Smart Analysis
+- **Executive Insights**: One-sentence summaries of slide content
+- **AI Speaker Coach**: Professional scripts for presenting each slide
+- **Research Engine**: Curated topic suggestions for deeper exploration
 
-1. web audio Api -> audio.ts
+### Persistent Notes Library
+- **Auto-Save**: Insights are saved locally with slide context
+- **Deep Linking**: Open cloud presentations directly to specific slides
+- **Export Reports**: Generate PDF/Word/Excel summaries of your curated insights
 
-2. audio chunk sent to backend
+### Visual Generation
+- **AI Slide Builder**: Generate complete slide decks from prompts
+- **Voice Input**: Dictate presentation ideas with real-time transcription
+- **Smart Layouts**: Automatic title, bullet, and notes formatting
 
-3. Whisper(open AI) -> transcript (inside analyze/route.s)
+### Robust & Reliable
+- **Mac-Optimized**: Fail-safe text extraction with multi-layered fallbacks
+- **Offline Storage**: Notes persist even after closing PowerPoint
+- **Clipboard Fallback**: Works in restricted iframe environments
 
-4. Transcript + slidetext -> gpt
+---
 
-5. gpt returns engagement + suggestion
+## 🛠️ Tech Stack
 
-lib/ai.ts -> prompt logic
+### Frontend
+- **Next.js 15** - React framework with App Router
+- **React 18** - UI components
+- **TypeScript** - Type safety
+- **Tailwind CSS 4** - Styling
 
-SideBar : start listening
+### AI & APIs
+- **OpenAI GPT-4** - Natural language processing
+- **Office.js** - PowerPoint integration
 
-AdaptIq is a Powerpoint Add-in. users install it once and then it appears inside powerpoint as a sidebar they can open during any presentation
+### Export & Data
+- **jsPDF** - PDF generation
+- **docx** - Word document export
+- **xlsx** - Excel spreadsheet export
+- **localStorage** - Persistent notes storage
 
-TTS: Read suggesstion out loud
+### Development
+- **ESLint** - Code quality
+- **HTTPS Dev Server** - Secure local development for Office add-ins
 
-```bash
-npm run dev:https
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- **Node.js 20+**
+- **PowerPoint** (Desktop or Web)
+- **OpenAI API Key**
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/adapt-id.git
+   cd adapt-id
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables**
+   Create a `.env.local` file:
+   ```env
+   OPENAI_API_KEY=your_openai_api_key_here
+   ```
+
+4. **Start the development server**
+   ```bash
+   npm run dev:https
+   ```
+   The add-in will be available at `https://localhost:3000`
+
+5. **Sideload the add-in**
+   - Open PowerPoint
+   - Go to **Insert** → **Get Add-ins** → **Upload My Add-in**
+   - Select `manifest.xml` from the project root
+
+---
+
+## 📖 Usage
+
+### Analyzing Slides
+1. Select a slide in PowerPoint
+2. Click **"Analyze"** in the ADAPT AI pane
+3. Review the Executive Insight and Speaker Notes
+4. Click **"+ SAVE TO LIBRARY"** to persist the insight
+
+### Exporting Reports
+1. Save insights from multiple slides to your Library
+2. Click **"Export"** → Choose format (PDF/Word/Excel)
+3. Download your curated presentation summary
+
+### Generating Slides
+1. Switch to the **"VISUALS"** tab
+2. Enter your presentation topic or outline
+3. Enable **"Research Mode"** for enhanced content
+4. Click **"Generate Deck"** to create slides
+
+---
+
+## 🎓 Why Use ADAPT AI?
+
+### For Presenters
+- **Save Time**: Generate speaker notes instantly instead of writing them manually
+- **Stay Organized**: Never lose insights with the persistent Notes Library
+- **Present Confidently**: AI-generated scripts help you deliver polished presentations
+
+### For Educators
+- **Lecture Prep**: Quickly create structured slide decks from course outlines
+- **Student Handouts**: Export curated notes as study guides
+
+### For Business Professionals
+- **Executive Summaries**: Distill complex presentations into key takeaways
+- **Pitch Decks**: Generate compelling narratives with research-backed content
+- **Meeting Prep**: Review saved insights before presenting
+
+---
+
+## 🏗️ Project Structure
+
+```
+adapt-id/
+├── app/
+│   └── taskpane/          # Main add-in UI
+├── components/
+│   ├── MagicDraft.tsx     # Smart analysis & library
+│   ├── MagicScroll.tsx    # Research viewer
+│   └── VisualGenerator.tsx # Slide generation
+├── lib/
+│   ├── ai.ts              # OpenAI integration
+│   ├── office.ts          # PowerPoint API
+│   ├── store.ts           # localStorage persistence
+│   └── export.ts          # PDF/Word/Excel export
+├── hooks/
+│   ├── useMagicDraft.ts   # Slide generation logic
+│   ├── useAudioMonitor.ts # Voice input
+│   └── useEngagement.ts   # User interaction tracking
+├── manifest.xml           # Office add-in manifest
+└── package.json
 ```
 
-use Powerpoint online
+---
 
-2. Sideload in PowerPoint (Web)
-   The easiest way to test is using PowerPoint on the web.
+## 🤝 Contributing
 
-Go to PowerPoint Online and create a blank presentation.
-Go to the Insert tab > Add-ins.
-Click Upload My Add-in.
-Select the
-manifest.xml
-file from your project root (
-…/adapt-id/manifest.xml
-).
-Accept any prompts. The "AI Slide Assistant" (AdaptIQ) Taskpane button should appear on the Home tab ribbon.
+Contributions are welcome! Please follow these steps:
 
-rm -rf .next
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+---
+
+## 🙏 Acknowledgments
+
+Built for **St. John's Hacks** hackathon.
+
+Powered by OpenAI GPT-4 and Microsoft Office.js.
+
+---
+
+## 📧 Support
+
+For issues or questions, please open an issue on GitHub.

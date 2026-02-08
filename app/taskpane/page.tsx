@@ -66,7 +66,7 @@ export default function TaskpanePage() {
           <div className="flex flex-col items-center justify-center h-screen bg-slate-50 p-4">
              <div className="text-center">
                  <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-                 <h2 className="text-lg font-bold text-slate-800 tracking-tight">AdaptIQ</h2>
+                 <h2 className="text-lg font-bold text-slate-800 tracking-tight">ADAPT AI</h2>
                  <p className="text-sm font-medium text-slate-50 mt-2">Connecting to PowerPoint...</p>
              </div>
           </div>
@@ -79,7 +79,10 @@ export default function TaskpanePage() {
       {/* Header */}
       <header className="px-5 py-4 bg-white border-b border-slate-200 shadow-sm z-10">
         <div className="flex justify-between items-center mb-4">
-            <h1 className="text-xl font-black italic tracking-tighter text-indigo-600 uppercase">ACME AI</h1>
+            <h1 className="text-xl font-black italic tracking-tighter text-indigo-600 uppercase">ADAPT AI</h1>
+            <p className="text-[10px] font-bold text-slate-400 leading-tight">
+                SMART ✨
+            </p>
         </div>
         
         {/* Tabs */}
@@ -94,7 +97,7 @@ export default function TaskpanePage() {
                 onClick={() => setView("magic")}
                 className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${view === 'magic' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500'}`}
             >
-                MAGIC DRAFT ✨
+                SMART ✨
             </button>
         </div>
       </header>

@@ -1,21 +1,85 @@
-import { useState } from "react";
-import { auditSlide, researchTopic } from "../lib/ai";
-import { getSlideText, getPresentationData } from "../lib/office";
+import { useState, useEffect } from "react";
+import { auditSlide, researchTopic, generateSmartSummary } from "../lib/ai";
+import { getSlideText, getPresentationStructuredData, getPresentationInfo, getCurrentSlideId, getCurrentSlideIndex } from "../lib/office";
+import { exportToExcel, exportToPDF, exportToWord } from "../lib/export";
+import { getSavedNotes, saveNote, deleteNote, SavedNote } from "../lib/store";
 import MagicScroll from "./MagicScroll";
 
 export default function MagicDraft() {
+  const [isSummarizing, setIsSummarizing] = useState(false);
   const [isAuditing, setIsAuditing] = useState(false);
   const [isEnriching, setIsEnriching] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [smartSummary, setSmartSummary] = useState<any>(null);
   const [auditResults, setAuditResults] = useState<any>(null);
   const [error, setError] = useState("");
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportContent, setExportContent] = useState("");
+  const [structuredData, setStructuredData] = useState<any[]>([]);
+  
+  // Notes Hub State
+  const [activeTab, setActiveTab] = useState<"copilot" | "library">("copilot");
+  const [savedNotes, setSavedNotes] = useState<SavedNote[]>([]);
+  const [presentationInfo, setPresentationInfo] = useState<{name: string, url: string} | null>(null);
+
+  // Load notes & info on mount
+  useEffect(() => {
+    setSavedNotes(getSavedNotes());
+    getPresentationInfo().then(info => setPresentationInfo(info));
+  }, []);
   
   // Enrichment Scroll States
   const [enrichmentContent, setEnrichmentContent] = useState("");
   const [showEnrichmentBubble, setShowEnrichmentBubble] = useState(false);
   const [isScrollOpen, setIsScrollOpen] = useState(false);
+
+  const handleSmartSummary = async () => {
+    setIsSummarizing(true);
+    setError("");
+    setSmartSummary(null);
+    try {
+      const text = await getSlideText();
+      
+      if (text === "ERR_NO_SLIDE_SELECTED") {
+        setError("No slide selected.");
+        setIsSummarizing(false);
+        return;
+      }
+
+      if (!text || text.trim().length === 0) {
+         console.warn("Empty text, proceeding with fallback Summary generation");
+      }
+
+      const results = await generateSmartSummary(text);
+      const slideId = await getCurrentSlideId();
+      const slideIndex = await getCurrentSlideIndex();
+      
+      setSmartSummary({ ...results, slideId, slideIndex }); // Save ID with local state too
+
+    } catch (e) {
+      console.error("Smart Summary failed:", e);
+      setError("Failed to generate summary.");
+    } finally {
+      setIsSummarizing(false);
+    }
+  };
+
+  const handleApplyNotes = async () => {
+    // Only save to Library (already auto-saved, but user might re-click)
+    if (smartSummary && presentationInfo) {
+        saveNote({
+            presentationName: presentationInfo.name,
+            presentationUrl: presentationInfo.url,
+            slideIndex: smartSummary.slideIndex || 1, 
+            slideId: smartSummary.slideId,
+            summary: smartSummary.summary,
+            speakerNotes: smartSummary.speakerNotes,
+            researchTags: smartSummary.researchTags || []
+        });
+        setSavedNotes(getSavedNotes()); 
+        setActiveTab("library"); // Switch to library to show it
+    }
+  };
 
   const handleAudit = async () => {
     setIsAuditing(true);
@@ -79,20 +143,51 @@ export default function MagicDraft() {
     setIsExporting(true);
     setError("");
     try {
-      const data = await getPresentationData();
-      if (!data || data.length === 0) {
-        setError("Could not read presentation data.");
+      // Export Strategy: Prioritize Saved Notes (Library)
+      // This is safer on Mac and gives user control ("Select slides manually by saving them")
+      
+      let dataToExport: any[] = [];
+      const notes = getSavedNotes();
+
+      if (notes && notes.length > 0) {
+        console.log("[MagicDraft] Exporting from Library (Safe Mode)");
+        // Convert notes to export format
+        dataToExport = notes.map(n => ({
+            index: n.slideIndex,
+            text: `## Executive Insight\n${n.summary}\n\n## Speaker Notes\n${n.speakerNotes}\n\n## Research Topics\n${n.researchTags.join(", ")}`,
+            tables: [] 
+        })).sort((a, b) => a.index - b.index);
+      } else {
+        // Fallback: Try current slide capture if library is empty
+        console.warn("[MagicDraft] Library empty. Exporting current slide.");
+        const currentText = await getSlideText();
+        const currentIndex = await getCurrentSlideIndex();
+        
+        if (currentText && currentText.length > 0) {
+            dataToExport = [{
+                index: currentIndex,
+                text: currentText,
+                tables: []
+            }];
+        }
+      }
+
+      if (!dataToExport || dataToExport.length === 0) {
+        setError("Nothing to export. Save some insights to your Library first!");
         setIsExporting(false);
         return;
       }
 
-      // Format as Markdown
-      const md = data.map((slide: any) => 
-        `## Slide ${slide.index}\n${slide.content}\n`
+      setStructuredData(dataToExport);
+
+      // Format as Markdown for preview/copy
+      const md = dataToExport.map((slide: any) => 
+        `## Slide ${slide.index}\n${slide.text}`
       ).join("\n---\n\n");
 
       setExportContent(md);
       setShowExportModal(true);
+
     } catch (e) {
       console.error("Export failed:", e);
       setError("Failed to export summary.");
@@ -102,8 +197,33 @@ export default function MagicDraft() {
   };
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(exportContent);
-    setError("Copied to clipboard! ✅"); // Quick hack to show success msg
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(exportContent);
+        setError("Copied to clipboard! ✅");
+      } else {
+        throw new Error("Clipboard API unavailable");
+      }
+    } catch (err) {
+      // Fallback for restricted environments (like Office IFrames)
+      const textArea = document.createElement("textarea");
+      textArea.value = exportContent;
+      // Ensure it's not visible
+      textArea.style.position = "fixed";
+      textArea.style.left = "-9999px";
+      textArea.style.top = "0";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        setError("Copied to clipboard! ✅ (Fallback)");
+      } catch (copyErr) {
+        console.error('Fallback copy failed', copyErr);
+        setError("Could not copy. Please select and copy manually.");
+      }
+      document.body.removeChild(textArea);
+    }
     setTimeout(() => setError(""), 2000);
   };
 
@@ -111,14 +231,31 @@ export default function MagicDraft() {
     <div className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm space-y-4 relative">
       {/* Header */}
       <div className="flex items-center gap-2 mb-2">
-        <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
-          ✨
+        <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-black">
+          {activeTab === "copilot" ? "S" : "📚"}
         </div>
         <div className="flex-1">
-          <h3 className="text-sm font-bold text-slate-800">Slide Auditor</h3>
-          <p className="text-[10px] text-slate-400">Refine, Enrich, & Export</p>
+          <h3 className="text-sm font-bold text-slate-800">
+            {activeTab === "copilot" ? "Smart" : "Notes Library"}
+          </h3>
+          <p className="text-[10px] text-slate-400">
+            {activeTab === "copilot" ? "Analyze • Research • Present" : "Your Saved Insights"}
+          </p>
         </div>
-        <span className="text-[8px] text-slate-300 self-start mt-1">v1.1</span>
+        <div className="flex bg-slate-100 p-0.5 rounded-lg">
+             <button 
+                onClick={() => setActiveTab("copilot")}
+                className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all ${activeTab === "copilot" ? "bg-white shadow-sm text-indigo-600" : "text-slate-400 hover:text-slate-600"}`}
+             >
+                Smart
+             </button>
+             <button 
+                onClick={() => setActiveTab("library")}
+                className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all ${activeTab === "library" ? "bg-white shadow-sm text-indigo-600" : "text-slate-400 hover:text-slate-600"}`}
+             >
+                Library
+             </button>
+        </div>
       </div>
 
       {/* Magic Scroll Trigger (Glowing Bubble) */}
@@ -137,7 +274,10 @@ export default function MagicDraft() {
       <MagicScroll 
         content={enrichmentContent}
         isOpen={isScrollOpen}
-        onClose={() => setIsScrollOpen(false)}
+        onClose={() => {
+            setIsScrollOpen(false);
+            setShowEnrichmentBubble(false); // Hide the bubble when closed
+        }}
       />
 
       {error && (
@@ -147,94 +287,195 @@ export default function MagicDraft() {
       )}
 
       {/* Audit Results */}
-      {auditResults && (
-        <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-600">Slide Score</span>
-            <span className={`text-lg font-black ${
-              auditResults.score >= 80 ? 'text-green-500' : 
-              auditResults.score >= 60 ? 'text-amber-500' : 'text-red-500'
-            }`}>
-              {auditResults.score}/100
-            </span>
-          </div>
+      {/* Smart Summary Results (Copilot Tab) */}
+      {activeTab === "copilot" && smartSummary && (
+        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
           
-          <div className="p-3 bg-slate-50 rounded-xl text-xs text-slate-600 italic border border-slate-100">
-            "{auditResults.summary}"
+          {/* Executive Summary */}
+          <div className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
+             <div className="flex items-center gap-1.5 mb-1">
+                <span className="text-sm">💡</span>
+                <span className="text-[10px] font-bold uppercase text-indigo-400">Executive Insight</span>
+             </div>
+             <p className="text-xs font-medium text-slate-700 leading-relaxed italic">
+                "{smartSummary.summary}"
+             </p>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold uppercase text-slate-400">Suggestions</label>
-            {auditResults.suggestions.map((suggestion: any, i: number) => (
-              <div key={i} className="p-2 border border-slate-200 rounded-lg text-xs">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className={`px-1.5 py-0.5 rounded text-[9px] uppercase font-bold ${
-                    suggestion.type === 'clarity' ? 'bg-blue-100 text-blue-600' :
-                    suggestion.type === 'brevity' ? 'bg-purple-100 text-purple-600' :
-                    'bg-orange-100 text-orange-600'
-                  }`}>
-                    {suggestion.type}
-                  </span>
-                </div>
-                <p className="text-slate-700">{suggestion.text}</p>
-              </div>
-            ))}
+          {/* Speaker Notes */}
+          <div className="relative group">
+             <div className="flex items-center justify-between mb-1.5 px-1">
+                <span className="text-[10px] font-bold uppercase text-slate-400">AI Speaker Coach</span>
+                <button 
+                    onClick={handleApplyNotes}
+                    className="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full hover:bg-indigo-100 transition-colors"
+                >
+                    + SAVE TO LIBRARY
+                </button>
+             </div>
+             <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600 leading-relaxed">
+                {smartSummary.speakerNotes}
+             </div>
           </div>
+
+          {/* Research Tags */}
+          <div className="space-y-2">
+             <span className="text-[10px] font-bold uppercase text-slate-400 px-1">Research Topics</span>
+             <div className="flex flex-wrap gap-2">
+                {smartSummary.researchTags?.map((tag: string, i: number) => (
+                    <span key={i} className="px-2.5 py-1 bg-white border border-slate-200 rounded-full text-[10px] font-bold text-slate-600 shadow-sm">
+                        🔍 {tag}
+                    </span>
+                ))}
+             </div>
+          </div>
+
         </div>
       )}
 
-      {/* Actions Grid */}
+      {/* Library Tab */}
+      {activeTab === "library" && (
+         <div className="space-y-3 animate-in fade-in slide-in-from-right-2">
+            {savedNotes.length === 0 ? (
+                <div className="text-center py-8 text-slate-400">
+                    <div className="text-2xl mb-2">📚</div>
+                    <p className="text-xs">No saved notes yet.</p>
+                    <p className="text-[10px]">Use the Copilot to generate and verify insights!</p>
+                </div>
+            ) : (
+                savedNotes.map((note) => (
+                    <div key={note.id} className="p-3 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-indigo-200 transition-all">
+                        <div className="flex justify-between items-start mb-2">
+                            <div>
+                                <h4 className="text-xs font-bold text-slate-800 line-clamp-1 max-w-[150px] truncate" title={note.presentationName}>
+                                  {note.presentationName.length > 20 ? note.presentationName.substring(0, 20) + "..." : note.presentationName}
+                                </h4>
+                                <span className="text-[9px] text-slate-400">{new Date(note.timestamp).toLocaleDateString()}</span>
+                            </div>
+                            {note.presentationUrl && (
+                                <a 
+                                    href={note.presentationUrl + 
+                                        (note.presentationUrl.includes("?") ? "&web=1" : "?web=1") + 
+                                        (note.slideId ? "&wdSlideId=" + note.slideId : "")} 
+                                    target="_blank" 
+                                    rel="noreferrer"
+                                    className="text-[9px] bg-blue-50 text-blue-600 px-2 py-1 rounded-full font-bold hover:bg-blue-100 transition-colors"
+                                >
+                                    OPEN ↗
+                                </a>
+                            )}
+                            {!note.presentationUrl && (
+                                <span className="text-[9px] bg-slate-50 text-slate-400 px-2 py-1 rounded-full font-bold">Local File</span>
+                            )}
+                        </div>
+                        <div className="flex items-center gap-2 mb-2">
+                             <span className="text-[9px] font-bold text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded">Slide {note.slideIndex}</span>
+                        </div>
+                        <p className="text-[10px] text-slate-600 italic mb-2 border-l-2 border-indigo-200 pl-2">"{note.summary}"</p>
+                        
+                        {/* Display Speaker Notes in Library */}
+                        <div className="mb-2 p-2 bg-slate-50 rounded border border-slate-100 text-[10px] text-slate-600 leading-relaxed">
+                            <span className="block text-[8px] font-bold uppercase text-slate-400 mb-1">Speaker Notes</span>
+                            {note.speakerNotes}
+                        </div>
+
+                        <div className="flex gap-1 flex-wrap">
+                            {note.researchTags?.slice(0, 2).map((tag, i) => (
+                                <span key={i} className="text-[8px] px-1.5 py-0.5 bg-slate-50 rounded text-slate-500 border border-slate-100">{tag}</span>
+                            ))}
+                        </div>
+                         <div className="mt-2 flex justify-end">
+                            <button 
+                                onClick={() => {
+                                    deleteNote(note.id);
+                                    setSavedNotes(getSavedNotes());
+                                }}
+                                className="text-[9px] text-red-400 hover:text-red-600 font-medium"
+                            >
+                                Remove
+                            </button>
+                        </div>
+                    </div>
+                ))
+            )}
+         </div>
+      )}
+
+      {/* Actions Grid (Only visible in Copilot mode) */}
+      {activeTab === "copilot" && (
       <div className="grid grid-cols-3 gap-2 pt-2">
         <ActionButton 
-          icon="🧐" 
-          label="Audit" 
-          onClick={handleAudit} 
-          isLoading={isAuditing} 
+          icon="⚡️" 
+          label="Analyze" 
+          onClick={handleSmartSummary} 
+          isLoading={isSummarizing} 
           disabled={isEnriching || isExporting} 
+          primary={true}
         />
         <ActionButton 
           icon="🧬" 
-          label="Enrich" 
+          label="Research" 
           onClick={handleEnrich} 
           isLoading={isEnriching} 
-          disabled={isAuditing || isExporting} 
+          disabled={isSummarizing || isExporting} 
         />
         <ActionButton 
           icon="📤" 
           label="Export" 
           onClick={handleExport} 
           isLoading={isExporting} 
-          disabled={isAuditing || isEnriching} 
+          disabled={isSummarizing || isEnriching} 
         />
       </div>
+      )}
 
       {/* Export Modal */}
       {showExportModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
             <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h3 className="font-bold text-slate-800 text-sm">Export Summary</h3>
+              <h3 className="font-bold text-slate-800 text-sm">Expert Export</h3>
               <button onClick={() => setShowExportModal(false)} className="text-slate-400 hover:text-slate-600">✕</button>
             </div>
-            <div className="p-4 overflow-y-auto flex-1 bg-slate-50/50">
-              <textarea 
-                readOnly 
-                value={exportContent}
-                className="w-full h-full min-h-[200px] p-3 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none resize-none font-mono text-slate-600"
-              />
+            
+            <div className="p-4 overflow-y-auto flex-1 bg-slate-50/50 space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase text-slate-400">Download Document</label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button onClick={() => exportToPDF(structuredData)} className="flex flex-col items-center justify-center p-3 bg-white border border-slate-200 rounded-xl hover:border-red-300 hover:bg-red-50 transition-all gap-1">
+                    <span className="text-xl">PDF</span>
+                  </button>
+                  <button onClick={() => exportToExcel(structuredData)} className="flex flex-col items-center justify-center p-3 bg-white border border-slate-200 rounded-xl hover:border-green-300 hover:bg-green-50 transition-all gap-1">
+                    <span className="text-xl">XLS</span>
+                  </button>
+                  <button onClick={() => exportToWord(structuredData)} className="flex flex-col items-center justify-center p-3 bg-white border border-slate-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-all gap-1">
+                    <span className="text-xl">DOC</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase text-slate-400">Markdown Preview</label>
+                <textarea 
+                  readOnly 
+                  value={exportContent}
+                  className="w-full min-h-[120px] p-3 text-[10px] bg-white border border-slate-200 rounded-xl focus:outline-none resize-none font-mono text-slate-600"
+                />
+              </div>
             </div>
-            <div className="p-4 border-t border-slate-100 bg-white grid grid-cols-2 gap-3">
+
+            <div className="p-4 border-t border-slate-100 bg-white flex flex-col gap-2">
               <button 
                 onClick={copyToClipboard}
-                className="py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-xs hover:bg-indigo-700 transition-colors"
+                className="w-full py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-xs hover:bg-indigo-700 transition-colors"
               >
                 Copy Markdown
               </button>
               <button 
                 onClick={() => setShowExportModal(false)}
-                className="py-2.5 bg-slate-100 text-slate-600 rounded-xl font-bold text-xs hover:bg-slate-200 transition-colors"
+                className="w-full py-2 bg-slate-100 text-slate-600 rounded-xl font-bold text-xs hover:bg-slate-200 transition-colors"
               >
-                Close
+                Cancel
               </button>
             </div>
           </div>

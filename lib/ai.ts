@@ -238,24 +238,30 @@ export const auditSlide = async (slideText: string) => {
     console.log("[lib/ai] Auditing slide text...");
     
     const prompt = `
-      You are a senior presentation coach.
-      Analyze the following slide text for clarity, impact, and brevity:
+      You are a senior presentation coach AND data analyst.
+      Analyze the following slide text for clarity, impact, brevity, and DATA INSIGHTS:
       "${slideText}"
 
       NOTE ON STRUCTURE:
       - Lines starting with "• " or "[BULLETED]" are already bulleted in the slide.
-      - DO NOT suggest adding bullets if they are already present. Use this information to avoid redundant advice.
+      - DO NOT suggest adding bullets if they are already present.
+      - Sections marked "[TABLE DATA]" or "[STRUCTURED TABLE]" contain raw table data.
 
-      Identify 3 specific improvements.
-      
+      TASK 1: AUDIT (Score & Suggestions)
+      Identify 3 specific improvements for clarity/impact.
+
+      TASK 2: SMART SUMMARY (The "Hackathon Winner" Feature)
+      - If the slide contains a table, numbers, or financial data: Provide a 1-sentence "Executive Data Summary" extracting the key trend, highest value, or most important take-away.
+      - If no data: Provide a 1-sentence "Thematic Summary" of what this slide communicates.
+
       Return a JSON object with:
       - score: number (1-100)
-      - summary: string (1 sentence overall feedback)
+      - summary: string (Your TASK 2 Smart Summary goes here. Make it sound intelligent and insight-driven.)
       - suggestions: Array<{
           type: "clarity" | "brevity" | "impact",
-          text: string (The specific suggestion),
-          original: string (The specific text substring to change, if applicable),
-          replacement: string (The suggested new text, if applicable)
+          text: string,
+          original: string,
+          replacement: string
         }>
     `;
 
@@ -278,5 +284,57 @@ export const auditSlide = async (slideText: string) => {
   } catch (error) {
     console.error("Error auditing slide:", error);
     return null;
+  }
+};
+
+export const generateSmartSummary = async (slideText: string) => {
+  try {
+    console.log("[lib/ai] Generating Smart Summary...");
+    
+    // Fallback if text is minimal or missing
+    const processText = (slideText && slideText.trim().length > 10) 
+      ? slideText 
+      : "The slide contains minimal text or only images. Please infer context based on generic business presentation themes.";
+
+    const prompt = `
+      You are an expert Presentation Copilot for a high-stakes hackathon demo.
+      
+      INPUT CONTEXT (Slide Content):
+      "${processText}"
+
+      YOUR GOAL:
+      Transform this raw slide information into a powerful, executive-level summary and speaker aid.
+      
+      REQUIRED OUTPUT (JSON):
+      {
+        "summary": "One punchy, high-impact sentence summarizing the key insight or main takeaway of this slide.",
+        "speakerNotes": "A professional, conversational script for the presenter to say. It should sound natural, confident, and engaging. (Max 3-4 sentences)",
+        "researchTags": ["Tag 1", "Tag 2", "Tag 3"] // 3 short, relevant topics or keywords that the user might want to research to deepen this slide's content.
+      }
+    `;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are a world-class presentation strategist.",
+        },
+        { role: "user", content: prompt },
+      ],
+      response_format: { type: "json_object" },
+    });
+
+    const content = response.choices[0].message.content;
+    if (!content) throw new Error("No response from AI");
+
+    return JSON.parse(content);
+  } catch (error) {
+    console.error("Error generating smart summary:", error);
+    return {
+      summary: "Could not generate summary at this time.",
+      speakerNotes: "Please try again.",
+      researchTags: []
+    };
   }
 };
