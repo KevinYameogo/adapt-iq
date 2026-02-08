@@ -56,3 +56,49 @@ export const transcribeAudio = async (audioBlob: Blob) => {
     return null;
   }
 };
+
+export interface SummarizeSlidesResult {
+  slideSummaries: string[];
+  fullSummary: string;
+}
+
+/** Summarize each slide and the whole presentation. Call from server (API route) only. */
+export const summarizeSlides = async (slideTexts: string[]): Promise<SummarizeSlidesResult | null> => {
+  try {
+    const slidesPayload = slideTexts
+      .map((text, i) => `Slide ${i + 1}:\n${text || "(no text)"}`)
+      .join("\n\n");
+
+    const prompt = `You are summarizing a presentation for an audience who will view it later via a shareable link.
+
+For each slide, provide a short summary (1-2 sentences) that captures the main point. At the end, provide one overall summary of the entire presentation (2-4 sentences).
+
+Presentation content:
+${slidesPayload}
+
+Return a JSON object with exactly:
+- slideSummaries: array of strings (one per slide, in order)
+- fullSummary: string (overall presentation summary)`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        { role: "system", content: "You are a helpful assistant that summarizes presentations clearly and concisely." },
+        { role: "user", content: prompt },
+      ],
+      response_format: { type: "json_object" },
+    });
+
+    const content = response.choices[0].message.content;
+    if (!content) throw new Error("No response from AI");
+
+    const parsed = JSON.parse(content) as { slideSummaries?: string[]; fullSummary?: string };
+    const slideSummaries = Array.isArray(parsed.slideSummaries) ? parsed.slideSummaries : [];
+    const fullSummary = typeof parsed.fullSummary === "string" ? parsed.fullSummary : "";
+
+    return { slideSummaries, fullSummary };
+  } catch (error) {
+    console.error("Error summarizing slides:", error);
+    return null;
+  }
+};

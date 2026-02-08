@@ -5,6 +5,8 @@ import { useEngagement } from "../../hooks/useEngagement";
 import StatusIndicator from "../../components/StatusIndicator";
 import Controls from "../../components/Controls";
 import SuggestionCard from "../../components/SuggestionCard";
+import { TaskpaneErrorBoundary } from "./TaskpaneErrorBoundary";
+import { getAllSlidesContent, insertSlideWithUrl } from "@/lib/office";
 
 declare global {
   interface Window {
@@ -13,12 +15,12 @@ declare global {
   }
 }
 
-export default function TaskpanePage() {
+function TaskpaneContent() {
   const [ready, setReady] = useState(false);
-  const [view, setView] = useState<"auto" | "manual">("auto");
+  const [view, setView] = useState<"auto" | "manual" | "summary">("auto");
   const isMounted = useRef(true);
-  
-  // Manual State (from User's edits)
+
+  // Manual slide state
   const [title, setTitle] = useState("AI Slide Title");
   const [bullets, setBullets] = useState("First bullet\nSecond bullet\nThird bullet");
   const [notes, setNotes] = useState("Speaker notes go here...\nSources:\n- https://example.com");
@@ -35,6 +37,16 @@ export default function TaskpanePage() {
 
   const [isTTSEnabled, setIsTTSEnabled] = useState(true);
 
+  // Summary & QR state
+  const [presenterName, setPresenterName] = useState("");
+  const [presenterTwitter, setPresenterTwitter] = useState("");
+  const [presenterLinkedIn, setPresenterLinkedIn] = useState("");
+  const [presenterInstagram, setPresenterInstagram] = useState("");
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [summaryResult, setSummaryResult] = useState<{ url: string; qrDataUrl: string; slideCount: number } | null>(null);
+  const [addSlideStatus, setAddSlideStatus] = useState("");
+
   // TTS Hook
   useEffect(() => {
     if (isTTSEnabled && engagementData?.suggestion) {
@@ -44,25 +56,26 @@ export default function TaskpanePage() {
     }
   }, [engagementData, isTTSEnabled]);
 
-  // Office.js Ready Hook
+  // Office.js Ready Hook — never throw so the pane stays open and error boundary can show any real error
   useEffect(() => {
     isMounted.current = true;
-    
-    // Poll for Office.js availability
-    const interval = setInterval(() => {
-        if (typeof window !== 'undefined' && window.Office && window.Office.onReady) {
-            window.Office.onReady(() => {
-                if (isMounted.current) {
-                    setReady(true);
-                }
-            });
-            clearInterval(interval);
+    let interval: ReturnType<typeof setInterval> | null = setInterval(() => {
+      try {
+        if (typeof window !== "undefined" && window.Office?.onReady) {
+          window.Office.onReady(() => {
+            if (isMounted.current) setReady(true);
+          });
+          if (interval) clearInterval(interval);
+          interval = null;
         }
+      } catch (_) {
+        // ignore so we don't close the pane
+      }
     }, 200);
 
     return () => {
-        isMounted.current = false;
-        clearInterval(interval);
+      isMounted.current = false;
+      if (interval) clearInterval(interval);
     };
   }, []);
 
@@ -82,7 +95,6 @@ export default function TaskpanePage() {
       await window.PowerPoint.run(async (context: any) => {
         const slide = context.presentation.getSelectedSlides().getItemAt(0);
 
-        // Title box
         const titleShape = slide.shapes.addTextBox(title);
         titleShape.left = 50;
         titleShape.top = 40;
@@ -126,6 +138,52 @@ export default function TaskpanePage() {
     }
   }
 
+  async function handleCreateSummaryAndQr() {
+    setSummaryError(null);
+    setSummaryResult(null);
+    setSummaryLoading(true);
+    try {
+      const { slides } = await getAllSlidesContent();
+      if (!slides.length) {
+        setSummaryError("No slides found. Make sure you have at least one slide in this presentation and try again.");
+        return;
+      }
+      const presenterSocials = {
+        name: presenterName.trim() || undefined,
+        twitter: presenterTwitter.trim() || undefined,
+        linkedin: presenterLinkedIn.trim() || undefined,
+        instagram: presenterInstagram.trim() || undefined,
+      };
+      const res = await fetch("/api/summary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slides, presenterSocials }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setSummaryError(data.error || "Failed to create summary");
+        return;
+      }
+      const data = await res.json();
+      setSummaryResult({ url: data.url, qrDataUrl: data.qrDataUrl, slideCount: data.slideCount });
+    } catch (e: any) {
+      setSummaryError(e?.message ?? "Something went wrong");
+    } finally {
+      setSummaryLoading(false);
+    }
+  }
+
+  async function handleAddSlideWithLink() {
+    if (!summaryResult?.url || !ready) return;
+    setAddSlideStatus("Adding slide...");
+    try {
+      await insertSlideWithUrl(summaryResult.url);
+      setAddSlideStatus("Slide added ✅");
+    } catch (e: any) {
+      setAddSlideStatus(`Error: ${e?.message ?? String(e)}`);
+    }
+  }
+
   if (!ready) {
       return (
           <div className="flex flex-col items-center justify-center h-screen bg-slate-50 p-4">
@@ -161,15 +219,21 @@ export default function TaskpanePage() {
         <div className="flex p-1 bg-slate-100 rounded-lg">
             <button 
                 onClick={() => setView("auto")}
-                className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${view === 'auto' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500'}`}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${view === "auto" ? "bg-white shadow-sm text-slate-800" : "text-slate-500"}`}
             >
-                AUTO-ADAPT
+                AUTO
             </button>
             <button 
                 onClick={() => setView("manual")}
-                className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${view === 'manual' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500'}`}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${view === "manual" ? "bg-white shadow-sm text-slate-800" : "text-slate-500"}`}
             >
                 MANUAL
+            </button>
+            <button 
+                onClick={() => setView("summary")}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${view === "summary" ? "bg-white shadow-sm text-slate-800" : "text-slate-500"}`}
+            >
+                WRAP-UP & QR
             </button>
         </div>
       </header>
@@ -177,7 +241,7 @@ export default function TaskpanePage() {
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto p-5 pb-24 space-y-5">
         
-        {view === 'auto' ? (
+        {view === 'auto' && (
             <>
                 {/* Engagement Card */}
                 {engagementData ? (
@@ -209,7 +273,9 @@ export default function TaskpanePage() {
                     </div>
                 )}
             </>
-        ) : (
+        )}
+
+        {view === "manual" && (
             <div className="space-y-4">
                 <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Slide Title</label>
@@ -220,7 +286,6 @@ export default function TaskpanePage() {
                         className="w-full bg-white border border-slate-200 p-3 rounded-xl text-sm focus:border-indigo-500 outline-none shadow-sm transition-colors"
                     />
                 </div>
-
                 <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Bullets (one per line)</label>
                     <textarea 
@@ -231,7 +296,6 @@ export default function TaskpanePage() {
                         className="w-full bg-white border border-slate-200 p-3 rounded-xl text-sm focus:border-indigo-500 outline-none shadow-sm transition-colors"
                     />
                 </div>
-
                 <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Speaker Notes</label>
                     <textarea 
@@ -242,7 +306,6 @@ export default function TaskpanePage() {
                         className="w-full bg-white border border-slate-200 p-3 rounded-xl text-sm focus:border-indigo-500 outline-none shadow-sm transition-colors"
                     />
                 </div>
-
                 <div className="flex gap-2 pt-2">
                     <button 
                         onClick={insertTitleAndBullets}
@@ -257,10 +320,84 @@ export default function TaskpanePage() {
                         Save Notes
                     </button>
                 </div>
-                
                 {status && (
                     <div className="text-center text-[10px] font-bold text-indigo-500 uppercase tracking-widest py-2 bg-indigo-50 rounded-lg border border-indigo-100">
                         {status}
+                    </div>
+                )}
+            </div>
+        )}
+
+        {view === "summary" && (
+            <div className="space-y-4">
+                <p className="text-xs text-slate-600">Add your socials (optional). Create a wrap-up page with key takeaways and a QR so people can view it and connect with you.</p>
+                <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Your name</label>
+                    <input
+                        value={presenterName}
+                        onChange={(e) => setPresenterName(e.target.value)}
+                        placeholder="e.g. Jane Smith"
+                        className="w-full bg-white border border-slate-200 p-2.5 rounded-xl text-sm focus:border-indigo-500 outline-none"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">X / Twitter</label>
+                    <input
+                        value={presenterTwitter}
+                        onChange={(e) => setPresenterTwitter(e.target.value)}
+                        placeholder="https://x.com/you or @you"
+                        className="w-full bg-white border border-slate-200 p-2.5 rounded-xl text-sm focus:border-indigo-500 outline-none"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">LinkedIn</label>
+                    <input
+                        value={presenterLinkedIn}
+                        onChange={(e) => setPresenterLinkedIn(e.target.value)}
+                        placeholder="https://linkedin.com/in/you"
+                        className="w-full bg-white border border-slate-200 p-2.5 rounded-xl text-sm focus:border-indigo-500 outline-none"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Instagram</label>
+                    <input
+                        value={presenterInstagram}
+                        onChange={(e) => setPresenterInstagram(e.target.value)}
+                        placeholder="https://instagram.com/you or @you"
+                        className="w-full bg-white border border-slate-200 p-2.5 rounded-xl text-sm focus:border-indigo-500 outline-none"
+                    />
+                </div>
+                <button
+                    onClick={handleCreateSummaryAndQr}
+                    disabled={summaryLoading || !ready}
+                    className="w-full py-3 px-4 rounded-xl font-bold text-sm bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors"
+                >
+                    {summaryLoading ? "Creating wrap-up…" : "Create wrap-up and QR"}
+                </button>
+                {summaryError && (
+                    <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-100">
+                        {summaryError}
+                    </div>
+                )}
+                {summaryResult && (
+                    <div className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm space-y-4">
+                        <div className="flex justify-center">
+                            <img src={summaryResult.qrDataUrl} alt="QR code" className="w-40 h-40 rounded-lg border border-slate-200" />
+                        </div>
+                        <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Share link</p>
+                        <p className="text-xs text-slate-700 break-all font-mono bg-slate-50 p-2 rounded border border-slate-100">
+                            {summaryResult.url}
+                        </p>
+                        <p className="text-xs text-slate-500">{summaryResult.slideCount} slides summarized.</p>
+                        <button
+                            onClick={handleAddSlideWithLink}
+                            className="w-full py-2 bg-white border border-slate-200 text-slate-800 text-xs font-bold uppercase rounded-xl hover:bg-slate-50"
+                        >
+                            Add slide with link
+                        </button>
+                        {addSlideStatus && (
+                            <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">{addSlideStatus}</p>
+                        )}
                     </div>
                 )}
             </div>
@@ -275,5 +412,13 @@ export default function TaskpanePage() {
         </footer>
       )}
     </div>
+  );
+}
+
+export default function TaskpanePage() {
+  return (
+    <TaskpaneErrorBoundary>
+      <TaskpaneContent />
+    </TaskpaneErrorBoundary>
   );
 }
