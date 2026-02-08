@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
-           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-           xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
-           xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1" 
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+           xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0" 
+           xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides" 
            xsi:type="TaskPaneApp">
 
-  <Id>7d3f2b16-9b34-4f38-9d8b-2c84b0f3c9a1</Id>
-  <Version>1.0.0.0</Version>
+  <Id>8e4f2b16-9b34-4f38-9d8b-2c84b0f3c9b2</Id>
+  <Version>1.0.0.1</Version>
   <ProviderName>St Johns Hacks</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="AdaptIQ"/>
-  <Description DefaultValue="Generate and insert slide content from prompts."/>
+  <DisplayName DefaultValue="AdaptIQ PRO Sync"/>
+  <Description DefaultValue="AI-powered slide extraction and audience summaries."/>
   <IconUrl DefaultValue="https://localhost:3000/favicon.ico"/>
   <HighResolutionIconUrl DefaultValue="https://localhost:3000/favicon.ico"/>
   <SupportUrl DefaultValue="https://localhost:3000"/>
@@ -66,7 +66,6 @@
               </Group>
             </OfficeTab>
           </ExtensionPoint>
-
           <TaskpaneId>TaskpaneId1</TaskpaneId>
         </DesktopFormFactor>
       </Host>
@@ -91,10 +90,9 @@
       </bt:ShortStrings>
 
       <bt:LongStrings>
-        <bt:String id="GetStarted.Description" DefaultValue="Generate slide titles, bullets, and notes, then insert into the current slide."/>
+        <bt:String id="GetStarted.Description" DefaultValue="AI-powered slide extraction and audience summaries."/>
         <bt:String id="ShowTaskpaneButton.Tooltip" DefaultValue="Open the AI task pane."/>
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>
-
 </OfficeApp>

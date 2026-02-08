@@ -16,6 +16,7 @@ export default function RootLayout({
     <html lang="en">
       <head>
         {/* Shim for window.history which can be restricted in Office taskpanes */}
+
         <script
           dangerouslySetInnerHTML={{
             __html: `
