@@ -6,7 +6,7 @@ Powerpoint Add-In(nextjs)
 
 Audio signals
 
-Real-Time siggustions
+Real-Time suggustions
 
 One-click slide Action
 
@@ -54,3 +54,5 @@ file from your project root (
 …/adapt-id/manifest.xml
 ).
 Accept any prompts. The "AI Slide Assistant" (AdaptIQ) Taskpane button should appear on the Home tab ribbon.
+
+rm -rf .next

@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:https": "next dev --experimental-https",
+    "dev:https": "npm run kill-ports && next dev --experimental-https",
+    "kill-ports": "lsof -i :3000 -t | xargs kill -9 || true; lsof -i :3001 -t | xargs kill -9 || true; lsof -i :3002 -t | xargs kill -9 || true",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"

@@ -17,6 +17,7 @@
 
   <AppDomains>
     <AppDomain>https://localhost:3000</AppDomain>
+    <AppDomain>https://localhost:3000/audio-dialog</AppDomain>
   </AppDomains>
 
   <Hosts>

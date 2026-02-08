@@ -31,7 +31,7 @@ export default function BackToTop() {
   return (
     <button
       onClick={scrollToTop}
-      className="fixed bottom-24 right-6 h-10 w-10 bg-white border border-slate-200 text-slate-900 rounded-full shadow-lg flex items-center justify-center hover:bg-slate-50 transition-all z-40 animate-in fade-in slide-in-from-bottom-4"
+      className="fixed bottom-24 left-1/2 -translate-x-1/2 h-10 w-10 bg-white border border-slate-200 text-slate-900 rounded-full shadow-lg flex items-center justify-center hover:bg-slate-50 transition-all z-40 animate-in fade-in slide-in-from-bottom-4"
       aria-label="Back to top"
     >
       <span className="text-xl">↑</span>
