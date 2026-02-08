@@ -44,6 +44,7 @@ ADAPT AI is an intelligent presentation copilot that analyzes your slides, gener
 
 ### AI & APIs
 - **OpenAI GPT-4** - Natural language processing
+- **Tavily API** - Web search and research integration
 - **Office.js** - PowerPoint integration
 
 ### Export & Data
@@ -64,6 +65,7 @@ ADAPT AI is an intelligent presentation copilot that analyzes your slides, gener
 - **Node.js 20+**
 - **PowerPoint** (Desktop or Web)
 - **OpenAI API Key**
+- **Tavily API Key** (for research features)
 
 ### Installation
 
@@ -81,7 +83,8 @@ ADAPT AI is an intelligent presentation copilot that analyzes your slides, gener
 3. **Set up environment variables**
    Create a `.env.local` file:
    ```env
-   OPENAI_API_KEY=your_openai_api_key_here
+   NEXT_PUBLIC_OPENAI_API_KEY=your_openai_api_key_here
+   NEXT_PUBLIC_TAVILY_API_KEY=your_tavily_api_key_here
    ```
 
 4. **Start the development server**
