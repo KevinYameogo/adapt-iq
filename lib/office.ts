@@ -90,7 +90,6 @@ export const getAllSlidesContent = async (): Promise<{ slides: SlideContent[] }>
         const shapes = slide.shapes;
         shapes.load("items");
         const imageResult = slide.getImageAsBase64({ width: 640 });
-        imageResult.load("value");
         await context.sync();
 
         let text = "";

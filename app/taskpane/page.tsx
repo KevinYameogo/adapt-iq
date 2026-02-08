@@ -19,8 +19,8 @@ function TaskpaneContent() {
   const [ready, setReady] = useState(false);
   const [view, setView] = useState<"auto" | "manual" | "summary">("auto");
   const isMounted = useRef(true);
-  
-  // Manual State (from User's edits)
+
+  // Manual slide state
   const [title, setTitle] = useState("AI Slide Title");
   const [bullets, setBullets] = useState("First bullet\nSecond bullet\nThird bullet");
   const [notes, setNotes] = useState("Speaker notes go here...\nSources:\n- https://example.com");
@@ -38,6 +38,10 @@ function TaskpaneContent() {
   const [isTTSEnabled, setIsTTSEnabled] = useState(true);
 
   // Summary & QR state
+  const [presenterName, setPresenterName] = useState("");
+  const [presenterTwitter, setPresenterTwitter] = useState("");
+  const [presenterLinkedIn, setPresenterLinkedIn] = useState("");
+  const [presenterInstagram, setPresenterInstagram] = useState("");
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [summaryResult, setSummaryResult] = useState<{ url: string; qrDataUrl: string; slideCount: number } | null>(null);
@@ -91,7 +95,6 @@ function TaskpaneContent() {
       await window.PowerPoint.run(async (context: any) => {
         const slide = context.presentation.getSelectedSlides().getItemAt(0);
 
-        // Title box
         const titleShape = slide.shapes.addTextBox(title);
         titleShape.left = 50;
         titleShape.top = 40;
@@ -142,13 +145,19 @@ function TaskpaneContent() {
     try {
       const { slides } = await getAllSlidesContent();
       if (!slides.length) {
-        setSummaryError("No slides in the presentation.");
+        setSummaryError("No slides found. Make sure you have at least one slide in this presentation and try again.");
         return;
       }
+      const presenterSocials = {
+        name: presenterName.trim() || undefined,
+        twitter: presenterTwitter.trim() || undefined,
+        linkedin: presenterLinkedIn.trim() || undefined,
+        instagram: presenterInstagram.trim() || undefined,
+      };
       const res = await fetch("/api/summary", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slides }),
+        body: JSON.stringify({ slides, presenterSocials }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -224,7 +233,7 @@ function TaskpaneContent() {
                 onClick={() => setView("summary")}
                 className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${view === "summary" ? "bg-white shadow-sm text-slate-800" : "text-slate-500"}`}
             >
-                SUMMARY & QR
+                WRAP-UP & QR
             </button>
         </div>
       </header>
@@ -232,7 +241,7 @@ function TaskpaneContent() {
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto p-5 pb-24 space-y-5">
         
-        {view === 'auto' ? (
+        {view === 'auto' && (
             <>
                 {/* Engagement Card */}
                 {engagementData ? (
@@ -264,7 +273,9 @@ function TaskpaneContent() {
                     </div>
                 )}
             </>
-        ) : (
+        )}
+
+        {view === "manual" && (
             <div className="space-y-4">
                 <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Slide Title</label>
@@ -275,7 +286,6 @@ function TaskpaneContent() {
                         className="w-full bg-white border border-slate-200 p-3 rounded-xl text-sm focus:border-indigo-500 outline-none shadow-sm transition-colors"
                     />
                 </div>
-
                 <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Bullets (one per line)</label>
                     <textarea 
@@ -286,7 +296,6 @@ function TaskpaneContent() {
                         className="w-full bg-white border border-slate-200 p-3 rounded-xl text-sm focus:border-indigo-500 outline-none shadow-sm transition-colors"
                     />
                 </div>
-
                 <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Speaker Notes</label>
                     <textarea 
@@ -297,7 +306,6 @@ function TaskpaneContent() {
                         className="w-full bg-white border border-slate-200 p-3 rounded-xl text-sm focus:border-indigo-500 outline-none shadow-sm transition-colors"
                     />
                 </div>
-
                 <div className="flex gap-2 pt-2">
                     <button 
                         onClick={insertTitleAndBullets}
@@ -312,7 +320,6 @@ function TaskpaneContent() {
                         Save Notes
                     </button>
                 </div>
-                
                 {status && (
                     <div className="text-center text-[10px] font-bold text-indigo-500 uppercase tracking-widest py-2 bg-indigo-50 rounded-lg border border-indigo-100">
                         {status}
@@ -323,13 +330,49 @@ function TaskpaneContent() {
 
         {view === "summary" && (
             <div className="space-y-4">
-                <p className="text-xs text-slate-600">Create a shareable page with slide images and AI summaries. A QR code links to it.</p>
+                <p className="text-xs text-slate-600">Add your socials (optional). Create a wrap-up page with key takeaways and a QR so people can view it and connect with you.</p>
+                <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Your name</label>
+                    <input
+                        value={presenterName}
+                        onChange={(e) => setPresenterName(e.target.value)}
+                        placeholder="e.g. Jane Smith"
+                        className="w-full bg-white border border-slate-200 p-2.5 rounded-xl text-sm focus:border-indigo-500 outline-none"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">X / Twitter</label>
+                    <input
+                        value={presenterTwitter}
+                        onChange={(e) => setPresenterTwitter(e.target.value)}
+                        placeholder="https://x.com/you or @you"
+                        className="w-full bg-white border border-slate-200 p-2.5 rounded-xl text-sm focus:border-indigo-500 outline-none"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">LinkedIn</label>
+                    <input
+                        value={presenterLinkedIn}
+                        onChange={(e) => setPresenterLinkedIn(e.target.value)}
+                        placeholder="https://linkedin.com/in/you"
+                        className="w-full bg-white border border-slate-200 p-2.5 rounded-xl text-sm focus:border-indigo-500 outline-none"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Instagram</label>
+                    <input
+                        value={presenterInstagram}
+                        onChange={(e) => setPresenterInstagram(e.target.value)}
+                        placeholder="https://instagram.com/you or @you"
+                        className="w-full bg-white border border-slate-200 p-2.5 rounded-xl text-sm focus:border-indigo-500 outline-none"
+                    />
+                </div>
                 <button
                     onClick={handleCreateSummaryAndQr}
                     disabled={summaryLoading || !ready}
                     className="w-full py-3 px-4 rounded-xl font-bold text-sm bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors"
                 >
-                    {summaryLoading ? "Creating summary…" : "Create summary and QR"}
+                    {summaryLoading ? "Creating wrap-up…" : "Create wrap-up and QR"}
                 </button>
                 {summaryError && (
                     <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-100">

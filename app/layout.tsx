@@ -15,15 +15,20 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Shim for window.history which can be restricted in Office taskpanes */}
+        {/* Shim for window.history — Office taskpane can restrict these; inline so it runs before Next.js */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              if (typeof window !== 'undefined') {
-                if (!window.history) window.history = {};
-                if (!window.history.replaceState) window.history.replaceState = function() {};
-                if (!window.history.pushState) window.history.pushState = function() {};
-              }
+              (function(){
+                if (typeof window === 'undefined') return;
+                var h = window.history;
+                if (!h) window.history = h = {};
+                if (typeof h.replaceState !== 'function') h.replaceState = function() {};
+                if (typeof h.pushState !== 'function') h.pushState = function() {};
+                if (typeof h.go !== 'function') h.go = function() {};
+                if (typeof h.back !== 'function') h.back = function() {};
+                if (typeof h.forward !== 'function') h.forward = function() {};
+              })();
             `,
           }}
         />

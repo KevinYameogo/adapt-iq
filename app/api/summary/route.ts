@@ -9,6 +9,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const slides = body.slides as Array<{ index: number; text: string; imageBase64: string }> | undefined;
+    const presenterSocials = body.presenterSocials as { name?: string; twitter?: string; linkedin?: string; instagram?: string } | undefined;
 
     if (!Array.isArray(slides) || slides.length === 0) {
       return NextResponse.json({ error: "slides array required and must not be empty" }, { status: 400 });
@@ -26,6 +27,9 @@ export async function POST(req: NextRequest) {
       slideSummaries: summary.slideSummaries,
       fullSummary: summary.fullSummary,
       slides: slides.map(({ index, text, imageBase64 }) => ({ index, text, imageBase64 })),
+      presenterSocials: presenterSocials && (presenterSocials.name || presenterSocials.twitter || presenterSocials.linkedin || presenterSocials.instagram)
+        ? presenterSocials
+        : undefined,
     };
 
     saveDeck(id, deck);

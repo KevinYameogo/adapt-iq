@@ -9,10 +9,18 @@ export interface StoredSlide {
   imageBase64: string;
 }
 
+export interface PresenterSocials {
+  name?: string;
+  twitter?: string;
+  linkedin?: string;
+  instagram?: string;
+}
+
 export interface DeckData {
   slideSummaries: string[];
   fullSummary: string;
   slides: StoredSlide[];
+  presenterSocials?: PresenterSocials;
 }
 
 const store = new Map<string, DeckData>();
