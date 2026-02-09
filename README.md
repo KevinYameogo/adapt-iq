@@ -1,3 +1,4 @@
+![Alt](https://repobeats.axiom.co/api/embed/075cbbeb1b069c74dfd5f0f1f285088d69b319a3.svg "Repobeats analytics image")
 # ADAPT AI
 
 **AI-Powered Presentation Intelligence for PowerPoint**
