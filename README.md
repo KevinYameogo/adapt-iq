@@ -1,3 +1,4 @@
+
 # ADAPT AI
 
 **AI-Powered Presentation Intelligence for PowerPoint**
