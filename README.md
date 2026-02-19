@@ -1,6 +1,9 @@
 
 # ADAPT AI
 
+https://github.com/user-attachments/assets/c3d09263-7624-4690-92b8-6b9468bed31e
+
+
 **AI-Powered Presentation Intelligence for PowerPoint**
 
 ADAPT AI is a PowerPoint add-in that transforms how you create and refine presentations. Built with AI-first design, it provides instant insights, speaker coaching, and persistent knowledge management—all without leaving PowerPoint.
