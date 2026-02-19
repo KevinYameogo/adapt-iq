@@ -1,5 +1,5 @@
 
-# ADAPT AI
+# ADAPT IQ
 
 https://github.com/user-attachments/assets/c3d09263-7624-4690-92b8-6b9468bed31e
 
@@ -10,9 +10,9 @@ ADAPT AI is a PowerPoint add-in that transforms how you create and refine presen
 
 ---
 
-## 🎯 What is ADAPT AI?
+## 🎯 What is ADAPT IQ?
 
-ADAPT AI is an intelligent presentation copilot that analyzes your slides, generates professional speaker notes, suggests research topics, and maintains a persistent library of insights. Designed for Mac and Windows, it works around platform limitations to deliver a seamless, crash-free experience.
+ADAPT IQ is an intelligent presentation copilot that analyzes your slides, generates professional speaker notes, suggests research topics, and maintains a persistent library of insights. Designed for Mac and Windows, it works around platform limitations to deliver a seamless, crash-free experience.
 
 ## ✨ Features
 
