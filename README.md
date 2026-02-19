@@ -6,7 +6,7 @@ https://github.com/user-attachments/assets/c3d09263-7624-4690-92b8-6b9468bed31e
 
 **AI-Powered Presentation Intelligence for PowerPoint**
 
-ADAPT AI is a PowerPoint add-in that transforms how you create and refine presentations. Built with AI-first design, it provides instant insights, speaker coaching, and persistent knowledge management—all without leaving PowerPoint.
+ADAPT IQ is a PowerPoint add-in that transforms how you create and refine presentations. Built with AI-first design, it provides instant insights, speaker coaching, and persistent knowledge management—all without leaving PowerPoint.
 
 ---
 
@@ -75,8 +75,8 @@ ADAPT IQ is an intelligent presentation copilot that analyzes your slides, gener
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/adapt-id.git
-   cd adapt-id
+   git clone https://github.com/yourusername/adapt-iq.git
+   cd adapt-iq
    ```
 
 2. **Install dependencies**
@@ -146,7 +146,7 @@ ADAPT IQ is an intelligent presentation copilot that analyzes your slides, gener
 ## 🏗️ Project Structure
 
 ```
-adapt-id/
+adapt-iq/
 ├── app/
 │   └── taskpane/          # Main add-in UI
 ├── components/
